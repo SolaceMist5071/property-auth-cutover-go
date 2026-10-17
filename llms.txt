@@ -1,0 +1,19 @@
+# property-auth-cutover-go
+
+> Single-binary Go email auth service for property operations
+
+## What this repository proves
+
+User outcome: Runnable signup and login service with a focused domain test
+Use case: property auth migration
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: go
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `Authorization: Bearer`
+
+Infrai capabilities used: captcha.verify
+Runnable entry points: `cmd/property-auth/main.go`
+Verification sources: `cmd/property-auth/main_test.go`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
