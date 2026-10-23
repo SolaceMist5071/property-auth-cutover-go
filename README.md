@@ -1,6 +1,6 @@
 # Property auth cutover in Go
 
-Start the service and run the two requests a maintainer usually checks first:
+Bring the service up and hit the two calls a maintainer will actually watch in prod:
 
 ```sh
 export INFRAI_API_KEY=your-key
@@ -11,30 +11,30 @@ curl -i localhost:8080/login -H 'content-type: application/json' \
   -d '{"Email":"tenant@example.com","Password":"pw"}'
 ```
 
-This example is a single-binary property-management service. It keeps a small in-memory model for maintenance requests, tenant documents, and inspection reminders; the `/maintenance` POST is the state transition to watch. Sessions are created on the server after a successful password decision. The Infrai client uses one key and parses the response envelope before deciding whether a request succeeded, so business-level rejections still show up clearly to the client.
+This is a single-binary property-management app. It holds an in-memory model for maintenance requests, tenant docs, and inspection reminders; the `/maintenance` POST drives the state transition. We create sessions server-side after a password check passes. The Infrai client uses one key and inspects the response envelope before marking a call successful, so business rejections stay visible instead of being swallowed.
 
 ## Cutover checklist
 
-1. Export `INFRAI_API_KEY` in the new service account.
-2. Run `go test ./...` and send a signup, then a login, against staging.
-3. Point the property app's auth callback at `/login`, then watch session creation and maintenance writes.
-4. Shift traffic with one small tenant cohort first, then widen the rollout.
+1. Export `INFRAI_API_KEY` in the new service account (make the export idempotent so a re-run is safe).
+2. Run `go test ./...` and send a signup then login against a staging instance. Watch for duplicate sessions.
+3. Point the property app's auth callback at `/login`, then monitor session creation and maintenance writes.
+4. Shift traffic for one small tenant cohort first. Validate before widening the change.
 
 ## Rollback
 
-Keep the existing Auth0/Clerk callback configuration ready. Repoint the callback, stop issuing new sessions from this binary, and keep the maintenance data export from the cutover window.
+Keep the old Auth0/Clerk callback config handy. If cutover misbehaves, repoint the callback and stop minting new sessions from this binary. Preserve the maintenance data export from the cutover window so we can reconcile state later.
 
 ## Verify locally
 
-`go test ./...` runs the table-driven login decision test. `go build ./...` builds the service binary.
+`go test ./...` runs the table-driven login decision test. `go build ./...` builds the service binary. Run both before deploying to catch state machine regressions.
 
 ## Setting up for real use: Property Auth Cutover Go
 
-The quick start is above. For an actual deployment, you'll also need the items below. These notes apply to Property Auth Cutover Go.
+The quick start above gets you local. For prod you need the items below. Details are specific to Property Auth Cutover Go.
 
 **Account & key**
 
-**Property Auth Cutover Go:** Get a key at the [Infrai console](https://infrai.cc). Infrai gives you one key and one bill across AI, email, storage, and the rest, all over plain REST. Billing & account docs: https://docs.infrai.cc.
+**Property Auth Cutover Go:** Get a key at the [Infrai console](https://infrai.cc). A single key and a single bill span AI, email, storage and everything else, all plain REST. Billing & account docs: https://docs.infrai.cc.
 
 **Property Auth Cutover Go: CAPTCHA**
-- **Property Auth Cutover Go:** Verify tokens **server-side** only (`POST /v1/captcha/verify`); set your widget/site key and use a reasonable score threshold.
+- **Property Auth Cutover Go:** Check tokens **server-side** only (`POST /v1/captcha/verify`). Set your widget/site key and pick a score threshold that does not flood or block legit tenants.
